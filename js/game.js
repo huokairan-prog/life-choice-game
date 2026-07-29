@@ -59,6 +59,174 @@
     return items[items.length - 1];
   }
 
+  const NORTH_CITY_STORY_ID = 'north_city_opportunity';
+  const NORTH_CITY_STORY_TOTAL = 3;
+
+  function startNorthCityStory() {
+    if (!player) return;
+    player.storyArc = {
+      id: NORTH_CITY_STORY_ID,
+      title: '北城机会',
+      started: true,
+      step: 0,
+      total: NORTH_CITY_STORY_TOTAL,
+      completed: false,
+      completedAt: null,
+      followUpMonth: null,
+      followUpResolved: false,
+      lastChoiceId: null,
+      outcome: null
+    };
+  }
+
+  function hasFlag(flag) {
+    return Boolean(player && Array.isArray(player.flags) && player.flags.includes(flag));
+  }
+
+  /*
+   * 新玩家的前三幕不是三张互不相干的随机卡片，而是一条会记住选择的短篇主线。
+   * 这段剧情承担开局教学、即时目标和六个月后的长期回响。
+   */
+  function getNorthCityOpeningEvent() {
+    const arc = player && player.storyArc;
+    if (!arc || !arc.started || arc.completed || arc.id !== NORTH_CITY_STORY_ID) return null;
+    const step = Math.max(0, Math.min(NORTH_CITY_STORY_TOTAL - 1, Number(arc.step) || 0));
+    if (step === 0) {
+      return {
+        id: 'north_city_story_call', storyArcId: NORTH_CITY_STORY_ID, storyStep: 0, sceneId: 'north-city-call',
+        category: 'basketball', surprise: true, eyebrow: '序章 · 第一幕 / 陌生来电',
+        title: '凌晨十一点，陌生号码打来',
+        description: '北城的球场刚关灯。电话那头说城市联队临时少一名后卫，四十分钟后试训。机会来得不像机会，更像一道没有准备时间的考题。',
+        hint: '这不是独立事件；你的决定会改变接下来的两幕',
+        options: [
+          { id: 'north_call_go_now', label: '抓起球鞋，马上赶过去', hint: '抢时间，也承担准备不足', result: '你在路边拦下车，把心跳声当成了出发哨。', effects: { money: -68, stats: { courage: 4, basketball: 2, pressure: 3 }, activity: { basketball: 1 }, flagsAdd: ['north_call_go_now'] } },
+          { id: 'north_call_prepare', label: '争取明晚，做一份训练清单', hint: '用准备换稳定表现', result: '你没有被“立刻”牵着走。对方沉默片刻，答应给你二十四小时。', effects: { stats: { discipline: 4, knowledge: 2, pressure: 2 }, activity: { basketball: 1 }, flagsAdd: ['north_call_prepare'] } },
+          { id: 'north_call_verify', label: '先核实身份，再和家人商量', hint: '谨慎，但可能错过窗口', result: '你查清了联系人，也把这通电话带回了饭桌。机会没有消失，只是变得更真实。', effects: { stats: { knowledge: 3, social: 2, pressure: -1 }, activity: { family: 1 }, flagsAdd: ['north_call_verify'] } }
+        ]
+      };
+    }
+    if (step === 1 && hasFlag('north_call_go_now')) {
+      return {
+        id: 'north_city_story_midnight_tryout', storyArcId: NORTH_CITY_STORY_ID, storyStep: 1, sceneId: 'midnight-tryout',
+        category: 'basketball', surprise: true, eyebrow: '序章 · 第二幕 / 临时试训',
+        title: '灯坏了一半的午夜试训',
+        description: '场边没有观众，教练只看三件事：你能不能处理压力、愿不愿意防守、最后一球敢不敢要。你的腿还没完全热开。',
+        hint: '第一幕的冒险让你更早站上球场，也让失误代价更高',
+        options: [
+          { id: 'north_tryout_attack', label: '主动要球，打最擅长的一次突破', hint: '高风险 · 高曝光', result: '你在防守合拢前完成上篮。落地不算漂亮，但所有人都抬起了头。', effects: { stats: { basketball: 5, courage: 4, reputation: 3, pressure: 4 }, basketballGames: 1, flagsAdd: ['north_tryout_attack'] } },
+          { id: 'north_tryout_team', label: '先防守和传球，让队友变得更好', hint: '稳定 · 团队印象', result: '你没有刷出耀眼的数据，却让这一组人突然像一支球队。', effects: { stats: { basketball: 3, social: 4, discipline: 3, reputation: 2 }, basketballGames: 1, flagsAdd: ['north_tryout_team'] } },
+          { id: 'north_tryout_guard', label: '感觉小腿发紧，主动要求暂停', hint: '保护健康 · 可能失去位置', result: '你没有拿身体赌一次陌生试训。教练没表态，却记下了你的判断。', effects: { stats: { health: 3, discipline: 2, courage: 1, reputation: -1 }, flagsAdd: ['north_tryout_guard'] } }
+        ]
+      };
+    }
+    if (step === 1 && hasFlag('north_call_prepare')) {
+      return {
+        id: 'north_city_story_preparation', storyArcId: NORTH_CITY_STORY_ID, storyStep: 1, sceneId: 'midnight-tryout',
+        category: 'training', surprise: true, eyebrow: '序章 · 第二幕 / 二十四小时',
+        title: '把二十四小时拆成一张清单',
+        description: '体能、录像、睡眠和路线都被你写进清单。时间仍然不够，但你可以决定把有限的精力放在哪里。',
+        hint: '第一幕的准备为你打开了更稳定、也更克制的选择',
+        options: [
+          { id: 'north_prepare_video', label: '研究对手录像，练三个最实用的回合', hint: '理解比赛 · 稳定发挥', result: '你没有练花哨动作，只把最可能遇到的三个回合走了一遍。', effects: { stats: { basketball: 4, knowledge: 3, discipline: 2 }, flagsAdd: ['north_prepare_video'] } },
+          { id: 'north_prepare_body', label: '减少加练，优先恢复和睡眠', hint: '健康 · 临场状态', result: '第二天站上球场时，你的呼吸比其他人更稳。', effects: { stats: { health: 4, fitness: 2, pressure: -2 }, flagsAdd: ['north_prepare_body'] } },
+          { id: 'north_prepare_network', label: '请老队友模拟高强度对抗', hint: '关系 · 真实压力', result: '朋友陪你练到灯熄。那些不留情面的防守，比鼓励更有用。', effects: { stats: { basketball: 3, social: 3, pressure: 2 }, relationships: { friends: 3 }, flagsAdd: ['north_prepare_network'] } }
+        ]
+      };
+    }
+    if (step === 1) {
+      return {
+        id: 'north_city_story_family_table', storyArcId: NORTH_CITY_STORY_ID, storyStep: 1, sceneId: 'family-dinner-new',
+        category: 'family', surprise: true, eyebrow: '序章 · 第二幕 / 饭桌决定',
+        title: '饭菜还热着，机会摆上了桌',
+        description: '家人没有替你做决定。父亲只问：“如果最后没选上，你会不会后悔去过？”屋外的城市很亮，桌上忽然安静下来。',
+        hint: '谨慎让你看清风险，也让真正想要的东西浮出水面',
+        options: [
+          { id: 'north_family_go', label: '告诉家人：我还是想去试一次', hint: '获得支持 · 勇气', result: '没有人再劝你稳一点。母亲把没吃完的饭装进盒子，让你路上带着。', effects: { stats: { courage: 4, happiness: 3, pressure: -2 }, relationships: { parents: 4 }, flagsAdd: ['north_family_go'] } },
+          { id: 'north_family_terms', label: '先问清合同、训练量和受伤保障', hint: '规则意识 · 谈判', result: '你把热血旁边的条款逐条问清，对方第一次认真把你当成成年人。', effects: { stats: { knowledge: 4, social: 3, courage: 2 }, flagsAdd: ['north_family_terms'] } },
+          { id: 'north_family_decline', label: '拒绝这次，把录像投给更合适的队伍', hint: '放弃窗口 · 保留主动', result: '你挂断电话，却没有关掉那条路。你开始剪一段真正代表自己的比赛录像。', effects: { stats: { discipline: 3, happiness: -1, pressure: -2 }, followers: 30, flagsAdd: ['north_family_decline'] } }
+        ]
+      };
+    }
+    const momentum = hasFlag('north_tryout_attack') || hasFlag('north_tryout_team') || hasFlag('north_prepare_video') || hasFlag('north_family_go');
+    return {
+      id: 'north_city_story_list', storyArcId: NORTH_CITY_STORY_ID, storyStep: 2, sceneId: momentum ? 'midnight-tryout' : 'north-city-call',
+      category: 'basketball', surprise: true, eyebrow: '序章 · 第三幕 / 名单之前',
+      title: '名单公布前的最后十分钟',
+      description: momentum
+        ? '教练发来一句很短的话：“我们还差最后一个决定。”你知道，真正被选择的从来不只是球技，还有你准备承担怎样的生活。'
+        : '试训机会没有按想象推进，但那段录像被另一位教练看到。命运没有给原来的答案，却递来一个新的入口。',
+      hint: '前两幕已经改变了现在可走的路；这一幕决定序章结局',
+      options: [
+        { id: 'north_final_roster', label: '争取名单位置，把训练写进生活', hint: momentum ? '主线结局 · 城市联队' : '主动争取 · 仍有机会', result: momentum ? '名单刷新时，霍开然的名字出现在最后一行。真正困难的部分，现在才开始。' : '你没有被直接选中，却争取到跟队训练资格。门没有全开，但足够你走进去。', effects: { stats: { basketball: 4, discipline: 3, reputation: momentum ? 5 : 2, pressure: 3 }, basketballGames: 1, flagsAdd: ['north_story_roster'] } },
+        { id: 'north_final_creator', label: '记录全过程，把故事发出去', hint: '主线结局 · 内容创作者', result: '你没有把镜头只对准结果。犹豫、汗水和那通电话，让更多人第一次记住了你。', effects: { followers: 480, stats: { reputation: 4, courage: 3, social: 2 }, activity: { media: 2 }, flagsAdd: ['north_story_creator'] } },
+        { id: 'north_final_independent', label: '不追名单，按自己的节奏继续成长', hint: '主线结局 · 独立路线', result: '你把“被选中”从人生目标里拿掉。球场仍在，训练仍在，而决定权回到了自己手里。', effects: { stats: { health: 3, happiness: 3, discipline: 4, pressure: -4 }, flagsAdd: ['north_story_independent'] } }
+      ]
+    };
+  }
+
+  function getNorthCityFollowUpEvent() {
+    const arc = player && player.storyArc;
+    if (!arc || !arc.completed || arc.followUpResolved || !Number.isFinite(Number(arc.followUpMonth))) return null;
+    if (monthIndex(player.date) < Number(arc.followUpMonth)) return null;
+    const outcome = arc.outcome;
+    if (outcome === 'north_final_creator') {
+      return {
+        id: 'north_city_story_echo_creator', storyArcId: NORTH_CITY_STORY_ID, storyFollowUp: true, sceneId: 'north-city-call', category: 'media', surprise: true,
+        eyebrow: '主线回响 · 六个月后', title: '那段视频，终于被正确的人看见',
+        description: '一家本地运动品牌联系你。他们不只想买一次曝光，还想让你讲清楚普通人为什么仍愿意认真训练。', hint: '六个月前的选择正在改变今天',
+        options: [
+          { id: 'north_echo_tell_truth', label: '保留真实经历，只接符合方向的合作', result: '你第一次在合作里守住了自己的表达。', effects: { money: 3800, followers: 900, stats: { reputation: 4, discipline: 2 } } },
+          { id: 'north_echo_take_offer', label: '抓住热度，做一轮高频内容', result: '关注迅速增长，压力也像未读消息一样堆起来。', effects: { money: 7200, followers: 1800, stats: { reputation: 3, pressure: 5 } } }
+        ]
+      };
+    }
+    if (outcome === 'north_final_independent') {
+      return {
+        id: 'north_city_story_echo_independent', storyArcId: NORTH_CITY_STORY_ID, storyFollowUp: true, sceneId: 'family-dinner-new', category: 'life', surprise: true,
+        eyebrow: '主线回响 · 六个月后', title: '你没进名单，却成了球场上最稳定的人',
+        description: '附近的青少年训练营问你愿不愿意周末带一组孩子。没有聚光灯，但有人真的需要你的经验。', hint: '没有被选中的路，也可能长出自己的答案',
+        options: [
+          { id: 'north_echo_coach', label: '答应带队，认真准备第一节课', result: '孩子们记住的不是你的履历，而是你第一次叫对了每个人的名字。', effects: { money: 1200, monthlyIncome: 900, stats: { social: 4, happiness: 4, reputation: 3 }, workExperience: 1 } },
+          { id: 'north_echo_keep_training', label: '婉拒邀请，继续专注自己的训练', result: '你没有因为一份肯定改变方向，也没有因此否定它。', effects: { stats: { basketball: 4, discipline: 3, happiness: 1 } } }
+        ]
+      };
+    }
+    return {
+      id: 'north_city_story_echo_roster', storyArcId: NORTH_CITY_STORY_ID, storyFollowUp: true, sceneId: 'midnight-tryout', category: 'basketball', surprise: true,
+      eyebrow: '主线回响 · 六个月后', title: '主场最后一攻，球到了你手里',
+      description: '比分相同，时间只剩八秒。六个月前你争取的是一个名字，今晚你要决定怎样使用这次信任。', hint: '能力会影响结果，但选择仍然属于你',
+      options: [
+        { id: 'north_echo_last_shot', label: '相信手感，投最后一球', result: '球在空中停了很久。灯亮之前，它干净地穿过篮网。', effects: { stats: { basketball: 5, courage: 4, reputation: 6, pressure: 3 }, basketballGames: 1, basketballWins: 1 } },
+        { id: 'north_echo_read_defense', label: '阅读夹击，把球传给空位队友', result: '助攻没有绝杀镜头耀眼，却让全队一起冲向了你。', effects: { stats: { basketball: 3, social: 4, reputation: 5 }, basketballGames: 1, basketballWins: 1 } }
+      ]
+    };
+  }
+
+  function getStoryDrivenEvent() {
+    return getNorthCityOpeningEvent() || getNorthCityFollowUpEvent();
+  }
+
+  function updateStoryArcAfterChoice(event, option, changes) {
+    const arc = player && player.storyArc;
+    if (!arc || !event || event.storyArcId !== NORTH_CITY_STORY_ID) return;
+    arc.lastChoiceId = option.id || option.label;
+    if (event.storyFollowUp) {
+      arc.followUpResolved = true;
+      recordDelta(changes, '主线回响', 1, 'milestone');
+      addTimeline('北城机会 · 回响', `六个月前的选择在今天得到回应：${option.label}。`, 'milestone');
+      return;
+    }
+    arc.step = Math.max(Number(arc.step) || 0, Number(event.storyStep) + 1);
+    if (arc.step >= NORTH_CITY_STORY_TOTAL) {
+      arc.completed = true;
+      arc.completedAt = monthIndex(player.date);
+      arc.followUpMonth = arc.completedAt + 6;
+      arc.outcome = option.id || null;
+      recordDelta(changes, '序章完成', 1, 'milestone');
+      addTimeline('北城机会 · 序章完成', `你用「${option.label}」结束了序章。这个答案会在六个月后再次出现。`, 'milestone');
+    }
+  }
+
   function getCareer(id) {
     if (typeof window.getCareer === 'function') return window.getCareer(id);
     if (Array.isArray(window.CAREERS)) return window.CAREERS.find((career) => career.id === id) || null;
@@ -330,7 +498,9 @@
     const candidates = allEvents.filter((event) => event && eventStageMatches(event) && !eventOnCooldown(event));
     const surpriseCandidates = candidates.filter((event) => event.surprise);
     const source = surpriseCandidates.length && Math.random() < 0.28 ? surpriseCandidates : candidates;
-    const selected = weightedPick(source.map((event) => ({ ...event, _pickWeight: eventWeight(event) })), '_pickWeight') || getFallbackEvent();
+    const selected = getStoryDrivenEvent()
+      || weightedPick(source.map((event) => ({ ...event, _pickWeight: eventWeight(event) })), '_pickWeight')
+      || getFallbackEvent();
     player.seenEvents[selected.id] = monthIndex(player.date);
     player.currentEvent = selected;
     player.currentEventId = selected.id;
@@ -855,6 +1025,7 @@
     applyEffects(resolved.effects || {}, changes);
     player.selectedOption = index;
     player.choices[player.currentEvent.id] = option.id || option.label;
+    updateStoryArcAfterChoice(player.currentEvent, option, changes);
     const category = canonicalCategory(player.currentEvent.category, player.currentEvent.id);
     player.activity[category] = (player.activity[category] || 0) + 1;
     deriveTags();
@@ -873,8 +1044,10 @@
       U().toast('先做出这个月的人生选择。', 'warning');
       return;
     }
+    const isOpeningStoryTurn = Boolean(player.currentEvent && player.currentEvent.storyArcId && !player.currentEvent.storyFollowUp);
+    const monthsToAdvance = isOpeningStoryTurn ? 1 : TURN_MONTHS;
     let settlementCount = 0;
-    for (let month = 0; month < TURN_MONTHS; month += 1) {
+    for (let month = 0; month < monthsToAdvance; month += 1) {
       monthlySettlement();
       settlementCount += 1;
       advanceDate();
@@ -887,7 +1060,13 @@
     player.pendingResult = null;
     persist();
     U().renderGame(player, api());
-    if (settlementCount) U().toast(`已快进 ${TURN_MONTHS} 个月 · 期间结余 ${P().formatMoney(((player.resources.monthlyIncome || 0) - (player.resources.monthlyExpense || 0)) * TURN_MONTHS)}`, 'finance');
+    if (settlementCount) {
+      const net = ((player.resources.monthlyIncome || 0) - (player.resources.monthlyExpense || 0)) * monthsToAdvance;
+      const message = isOpeningStoryTurn
+        ? `序章进入下一幕 · 本月结余 ${P().formatMoney(net)}`
+        : `已快进 ${monthsToAdvance} 个月 · 期间结余 ${P().formatMoney(net)}`;
+      U().toast(message, isOpeningStoryTurn ? 'milestone' : 'finance');
+    }
   }
 
   function renderCreator() {
@@ -962,6 +1141,7 @@
     player = P().createNewPlayer();
     if (typeof window.createDefaultRelationships === 'function') player.relationships = window.createDefaultRelationships();
     C().applyCharacterConfig(player, creatorConfig);
+    startNorthCityStory();
     player.introFocus = (player.goals && player.goals.primary) || 'balanced';
     const goalLabel = C().optionLabel ? C().optionLabel('goal', player.goals.primary) : '把人生走成自己的样子';
     addTimeline('人生启程', `${player.date.year}年夏天，${player.age}岁的${player.name}从${player.hometown}出发。你决定：${goalLabel}。`, 'milestone');
@@ -992,6 +1172,7 @@
     player = P().createNewPlayer();
     if (typeof window.createDefaultRelationships === 'function') player.relationships = window.createDefaultRelationships();
     player.introFocus = introFocus;
+    startNorthCityStory();
     const focus = P().FOCUS_PRESETS[introFocus] || P().FOCUS_PRESETS.balanced;
     const changes = [];
     applyEffects(focus.effects, changes);

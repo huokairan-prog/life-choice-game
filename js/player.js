@@ -82,7 +82,7 @@
   function createNewPlayer() {
     const now = { year: 2026, month: 7 };
     return {
-      version: 2,
+      version: 3,
       name: '霍开然',
       birth: BIRTH,
       hometown: '北方北城',
@@ -143,7 +143,20 @@
       isGameOver: false,
       ending: null,
       introFocus: null,
-      lastMonthlyResult: null
+      lastMonthlyResult: null,
+      storyArc: {
+        id: 'north_city_opportunity',
+        title: '北城机会',
+        started: false,
+        step: 0,
+        total: 3,
+        completed: false,
+        completedAt: null,
+        followUpMonth: null,
+        followUpResolved: false,
+        lastChoiceId: null,
+        outcome: null
+      }
     };
   }
 
@@ -174,7 +187,8 @@
       choices: data.choices || {},
       foreshadows: Array.isArray(data.foreshadows) ? data.foreshadows : [],
       milestones: data.milestones || {},
-      achievementDates: data.achievementDates || {}
+      achievementDates: data.achievementDates || {},
+      storyArc: { ...fresh.storyArc, ...(data.storyArc || {}) }
     };
     player.date.month = clamp(Math.round(player.date.month), 1, 12);
     player.date.year = Math.max(2026, Math.round(player.date.year));

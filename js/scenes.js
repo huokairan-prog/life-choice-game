@@ -44,6 +44,42 @@
    * ambientClass 只是一组语义化 class。CSS 可以只实现一部分；没有对应样式时也不会影响游戏。
    */
   const DEFINITIONS = {
+    'north-city-call': {
+      id: 'north-city-call',
+      title: '改变方向的电话',
+      eyebrow: '北城 · 凌晨十一点',
+      atmosphere: '旧街、球场围栏和远处的车灯都没有停下。一通电话，把普通夜晚切成了人生的两个版本。',
+      ambientClass: 'scene--north-city-call scene--late-night scene--distant-traffic scene--streetlight',
+      typewriter: pace(25, 240, 420, 'urgent').typewriter,
+      pacing: pace(25, 240, 420, 'urgent'),
+      colorTone: COLOR_TONES.night,
+      soundHints: ['手机震动', '远处车辆', '球场铁网轻响'],
+      location: '北城旧街'
+    },
+    'midnight-tryout': {
+      id: 'midnight-tryout',
+      title: '午夜试训',
+      eyebrow: '北城球场 · 灯只亮了一半',
+      atmosphere: '地面还留着雨后的反光。鞋底摩擦、急促呼吸和篮球落地声，把所有犹豫压缩成下一秒。',
+      ambientClass: 'scene--midnight-tryout scene--court-lights scene--basketball-bounce scene--late-night',
+      typewriter: pace(22, 200, 360, 'urgent').typewriter,
+      pacing: pace(22, 200, 360, 'urgent'),
+      colorTone: COLOR_TONES.court,
+      soundHints: ['篮球落地', '鞋底摩擦', '场灯电流声'],
+      location: '北城城市球场'
+    },
+    'family-dinner-new': {
+      id: 'family-dinner-new',
+      title: '饭桌上的决定',
+      eyebrow: '家里 · 夜色在窗外',
+      atmosphere: '菜还冒着热气，窗外是城市冷蓝的灯。家人没有替你选择，只把最真实的问题留在桌上。',
+      ambientClass: 'scene--family-dinner-new scene--rising-steam scene--home-window scene--late-night',
+      typewriter: pace(31, 320, 560, 'tender').typewriter,
+      pacing: pace(31, 320, 560, 'tender'),
+      colorTone: COLOR_TONES.family,
+      soundHints: ['碗筷轻碰', '家人低语', '窗外车声'],
+      location: '北城家中'
+    },
     'north-city-night-street': {
       id: 'north-city-night-street',
       title: '北城 · 夜行',
@@ -381,7 +417,8 @@
   }
 
   function pickSceneId(player, event, overrides) {
-    const explicit = overrides && (overrides.sceneId || overrides.id || overrides.forceScene);
+    const explicit = (overrides && (overrides.sceneId || overrides.id || overrides.forceScene))
+      || (event && (event.sceneId || event.forceScene));
     if (explicit && DEFINITIONS[explicit]) return explicit;
     const body = wordsFrom(event);
     const category = canonicalCategory(event && event.category, event);

@@ -197,11 +197,41 @@
     setText('#ambition-phrase', ambitionPhrase(player));
   }
 
+  function renderStoryMission(player) {
+    const holder = $('#story-mission');
+    const arc = player && player.storyArc;
+    if (!holder || !arc || !arc.started) {
+      if (holder) holder.classList.add('is-hidden');
+      return;
+    }
+    holder.classList.remove('is-hidden');
+    const total = Math.max(1, Number(arc.total) || 3);
+    const completedSteps = Math.max(0, Math.min(total, Number(arc.step) || 0));
+    const finished = Boolean(arc.completed);
+    const echoed = Boolean(arc.followUpResolved);
+    setText('#story-mission-kicker', echoed ? '主线已回响' : (finished ? '主线伏笔' : '当前主线'));
+    setText('#story-mission-title', arc.title || '北城机会');
+    setText('#story-mission-note', echoed
+      ? '这条故事已经写进你的人生档案'
+      : (finished ? '序章已完成；你的答案会在六个月后再次出现' : '连续三幕，每一次选择都会改变下一幕'));
+    setText('#story-mission-count', echoed ? '完成' : `${completedSteps} / ${total}`);
+    const progress = $('#story-mission-progress');
+    if (progress) progress.style.width = `${echoed ? 100 : Math.max(6, (completedSteps / total) * 100)}%`;
+    holder.classList.toggle('is-complete', finished);
+  }
+
   function renderEvent(player, api) {
     const event = player.currentEvent || {};
     const scene = renderScene(player, event);
-    setText('#event-type', scene ? scene.eyebrow : labelForCategory(event.category, api));
-    setText('#month-count-display', String(Math.max(1, (player.date.year - 2026) * 12 + player.date.month - 6)));
+    setText('#event-type', event.eyebrow || (scene ? scene.eyebrow : labelForCategory(event.category, api)));
+    const eventCount = $('#event-count');
+    if (eventCount) {
+      eventCount.innerHTML = event.storyFollowUp
+        ? '<i aria-hidden="true">✦</i> 六个月后的回响'
+        : (event.storyArcId
+          ? `<i aria-hidden="true">✦</i> 第 <b id="month-count-display">${Number(event.storyStep) + 1}</b> / 3 幕`
+          : `<i aria-hidden="true">✦</i> 第 <b id="month-count-display">${Math.max(1, (player.date.year - 2026) * 12 + player.date.month - 6)}</b> 个月`);
+    }
     setText('#event-icon', eventIcon(event.category));
     setText('#event-title', event.title || (scene && scene.title) || '命运正在酝酿');
     typeNarrative(event.description || (scene && scene.atmosphere) || '你在等待下一段人生故事。', scene && scene.typewriter);
@@ -233,6 +263,14 @@
     }
     resultPanel.classList.remove('is-hidden');
     next.classList.remove('is-hidden');
+    if (player.currentEvent && player.currentEvent.storyArcId && !player.currentEvent.storyFollowUp) {
+      const nextStep = Math.min(3, Number(player.currentEvent.storyStep || 0) + 2);
+      next.innerHTML = player.currentEvent.storyStep >= 2
+        ? '进入自由人生 <i aria-hidden="true">→</i>'
+        : `进入第 ${nextStep} 幕 <i aria-hidden="true">→</i>`;
+    } else {
+      next.innerHTML = '快进两个月 <i aria-hidden="true">→</i>';
+    }
     $('#result-description').textContent = player.pendingResult.narrative || '这个决定已经成为你人生的一部分。';
     $('#effect-list').innerHTML = (player.pendingResult.changes || []).map((item) => {
       const prefix = item.value > 0 && item.kind !== 'milestone' ? '+' : '';
@@ -413,7 +451,7 @@
 
   function renderGame(player, api) {
     if (!player) return;
-    renderHeader(player); renderQuickStats(player); renderEvent(player, api); renderProfile(player); renderStats(player); renderRelationships(player, api); renderAssets(player, api); renderAchievements(player); renderTimeline(player);
+    renderHeader(player); renderQuickStats(player); renderStoryMission(player); renderEvent(player, api); renderProfile(player); renderStats(player); renderRelationships(player, api); renderAssets(player, api); renderAchievements(player); renderTimeline(player);
     if (window.LIFE_GROWTH && typeof window.LIFE_GROWTH.render === 'function') window.LIFE_GROWTH.render(player);
     openPanel(activeTab, false);
   }
