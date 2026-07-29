@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="《人生选择》——一款中文电影感人生模拟器。" />
+    <meta name="theme-color" content="#101720" />
+    <title>人生选择</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="film-grain" aria-hidden="true"></div>
+    <div class="ambient ambient--one" aria-hidden="true"></div>
+    <div class="ambient ambient--two" aria-hidden="true"></div>
+
+    <main class="app-shell" id="app">
+      <!-- 首页：一条城市夏夜的街 -->
+      <section class="screen splash-screen" id="splash-screen" aria-labelledby="game-title">
+        <div class="city-atmosphere city-atmosphere--home" aria-hidden="true">
+          <div class="city-atmosphere__sky"></div>
+          <div class="city-atmosphere__moon"></div>
+          <div class="city-atmosphere__horizon"></div>
+          <div class="city-atmosphere__windows"></div>
+          <div class="city-atmosphere__basketball"><i></i><b></b></div>
+          <div class="city-atmosphere__bbq"><span></span><i></i><b></b></div>
+          <div class="city-atmosphere__bike"></div>
+          <div class="city-atmosphere__road"></div>
+          <div class="city-atmosphere__car"></div>
+          <div class="city-atmosphere__leaves"></div>
+        </div>
+        <div class="splash-screen__veil" aria-hidden="true"></div>
+        <aside class="cover-cat" aria-hidden="true"><img src="assets/night-cat-pixel-v1-optimized.png" alt="" /></aside>
+
+        <div class="splash-screen__content">
+          <h1 id="game-title"><span>你的</span><strong>人生选择</strong></h1>
+
+          <nav class="splash-actions" aria-label="游戏首页菜单">
+            <button class="button button--primary button--large cover-start" id="start-new-btn" type="button">
+              <span class="cover-start__mark" aria-hidden="true">▶</span><span>开启新人生</span><i aria-hidden="true">→</i>
+            </button>
+            <div class="cover-secondary">
+              <button class="button button--ghost cover-option" id="continue-btn" type="button"><span>继续人生</span><i aria-hidden="true">↗</i></button>
+              <button class="button button--ghost cover-option" id="achievement-start-btn" type="button" data-start-route="archive"><span>人生档案</span><i aria-hidden="true">◇</i></button>
+              <button class="button button--ghost cover-option" id="gallery-start-btn" type="button" data-start-route="gallery"><span>回忆相册</span><i aria-hidden="true">◎</i></button>
+              <button class="button button--ghost cover-option" id="start-settings-btn" type="button" data-start-route="settings"><span>游戏设置</span><i aria-hidden="true">⚙</i></button>
+              <button class="button button--ghost cover-option" id="story-intro-btn" type="button"><span>故事介绍</span><i aria-hidden="true">i</i></button>
+            </div>
+          </nav>
+        </div>
+      </section>
+
+      <!-- 首页保持干净，世界观说明单独放到这里。 -->
+      <section class="screen story-screen is-hidden" id="story-screen" aria-labelledby="story-title">
+        <div class="story-screen__backdrop" aria-hidden="true"></div>
+        <header class="story-screen__header"><button class="icon-button" id="story-back-btn" type="button" aria-label="返回游戏封面">←</button><span>故事介绍</span></header>
+        <article class="story-panel">
+          <p class="story-panel__kicker">从此刻出发</p>
+          <h2 id="story-title">每一次选择，<br /><em>都在改写人生。</em></h2>
+          <div class="story-panel__copy"><p>街灯、烧烤摊、球场和还没说出口的野心，构成了故事最初的样子。</p><p>有人留在故乡，有人奔向远方；而这一次，你决定怎样生活。</p></div>
+          <button class="button button--primary button--large story-panel__start" id="story-start-btn" type="button">开启新人生 <i aria-hidden="true">→</i></button>
+        </article>
+        <div class="story-screen__cat" aria-hidden="true"><img src="assets/night-cat-pixel-v1-optimized.png" alt="" /></div>
+      </section>
+
+      <!-- 开始新人生时的电影转场。scenes.js 可以控制各段的显隐。 -->
+      <section class="screen opening-montage is-hidden" id="opening-montage" aria-labelledby="montage-title">
+        <div class="opening-montage__static" aria-hidden="true"></div>
+        <div class="opening-montage__photo" aria-hidden="true"><span>北城 · 夏</span></div>
+        <div class="opening-montage__frame" aria-hidden="true"></div>
+        <div class="opening-montage__copy">
+          <p class="eyebrow" id="montage-date">2004 年 7 月 1 日</p>
+          <h2 id="montage-title">北方 · 北城</h2>
+          <p id="montage-line">一个普通家庭里，一个新的故事开始了。</p>
+        </div>
+        <p class="opening-montage__cue" id="montage-cue">远处有火车进站，篮球落在地上。</p>
+        <button class="text-button opening-montage__skip" id="montage-skip-btn" type="button">跳过片头</button>
+      </section>
+
+      <!-- 九步角色创建。character.js 会向 creator-step-body 填入每一步的控件。 -->
+      <section class="screen creator-screen is-hidden" id="creator-screen" aria-labelledby="creator-step-title">
+        <div class="creator-screen__backdrop" aria-hidden="true"><span></span><i></i></div>
+        <header class="creator-header">
+          <button class="icon-button creator-header__close" id="creator-close-btn" type="button" aria-label="返回首页">←</button>
+          <div class="creator-header__title"><p class="eyebrow">人物档案 · 创建中</p><b>把这一生，先写成你的样子</b></div>
+          <span class="creator-step-number" id="creator-step-number">01 / 09</span>
+        </header>
+
+        <div class="creator-layout">
+          <section class="creator-workspace">
+            <ol class="creator-progress" id="creator-progress" aria-label="角色创建进度">
+              <li class="is-current">基础身份</li><li>身体外貌</li><li>性格倾向</li><li>初始家庭</li><li>天赋能力</li><li>兴趣爱好</li><li>人生目标</li><li>难度与随机性</li><li>最终确认</li>
+            </ol>
+            <div class="creator-step-card">
+              <p class="creator-step-caption" id="creator-step-caption">第一幕 / 让故事从一个名字开始</p>
+              <h2 id="creator-step-title">基础身份</h2>
+              <div class="creator-step-body" id="creator-step-body">
+                <p class="creator-placeholder">正在整理你的第一份人生档案……</p>
+              </div>
+            </div>
+            <footer class="creator-actions">
+              <button class="button button--ghost" id="creator-back-btn" type="button">← 上一步</button>
+              <button class="button button--primary" id="creator-next-btn" type="button">下一步 <i aria-hidden="true">→</i></button>
+              <button class="button button--primary is-hidden" id="creator-confirm-btn" type="button">确认，开始这一生 <i aria-hidden="true">→</i></button>
+            </footer>
+          </section>
+
+          <aside class="creator-preview" id="creator-preview" aria-label="实时角色预览">
+            <div class="creator-preview__paperclip" aria-hidden="true"></div>
+            <p class="creator-preview__stamp">LIFE FILE · 2004</p>
+            <div class="creator-avatar" id="creator-avatar" aria-hidden="true"><span>霍</span><i></i></div>
+            <div class="creator-preview__identity">
+              <p id="creator-preview-name">霍开然</p>
+              <small id="creator-preview-origin">北方 · 北城</small>
+            </div>
+            <div class="creator-preview__vitals">
+              <span><small>身高</small><b id="creator-preview-height">185 cm</b></span>
+              <span><small>体型</small><b id="creator-preview-build">运动型</b></span>
+              <span><small>人生难度</small><b id="creator-preview-difficulty">真实</b></span>
+            </div>
+            <p class="creator-preview__story" id="creator-preview-story">他还不知道，许多看似普通的日子，会在很久以后成为答案。</p>
+            <div class="creator-preview__ephemera" aria-hidden="true"><i>NORTH</i><b>🏀</b><em>07.01</em></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 旧的开局方向选择仍然保留，用于兼容现有核心循环。 -->
+      <section class="screen intro-screen is-hidden" id="intro-screen" aria-labelledby="intro-title">
+        <div class="intro-screen__scene" aria-hidden="true"><span></span><i></i><b></b></div>
+        <header class="intro-screen__header">
+          <button class="icon-button" id="intro-back-btn" type="button" aria-label="返回首页">←</button>
+          <span class="progress-text">人生序章 <b>1 / 1</b></span>
+        </header>
+
+        <div class="intro-screen__body">
+          <div class="intro-kicker">2026 年 7 月 · 22 岁 · 北城夏夜</div>
+          <h2 id="intro-title">第一步，<br /><em>你想成为怎样的人？</em></h2>
+          <p id="intro-copy" class="intro-copy">篮球、远方、事业、爱情和财富都在等待。先选一个你最愿意投入的方向。</p>
+
+          <div class="intro-choice-list" id="intro-choice-list" role="list" aria-label="开局方向">
+            <button class="intro-choice is-selected" type="button" data-intro-choice="basketball" role="listitem"><span class="intro-choice__icon">🏀</span><span class="intro-choice__body"><strong>专注篮球训练</strong><small>把汗留在球场上</small></span><span class="intro-choice__check" aria-hidden="true">→</span></button>
+            <button class="intro-choice" type="button" data-intro-choice="english" role="listitem"><span class="intro-choice__icon">✈</span><span class="intro-choice__body"><strong>努力提升英语</strong><small>给远方一张通行证</small></span><span class="intro-choice__check" aria-hidden="true">→</span></button>
+            <button class="intro-choice" type="button" data-intro-choice="money" role="listitem"><span class="intro-choice__icon">¥</span><span class="intro-choice__body"><strong>开始寻找赚钱机会</strong><small>不甘心一直普通</small></span><span class="intro-choice__check" aria-hidden="true">→</span></button>
+            <button class="intro-choice" type="button" data-intro-choice="media" role="listitem"><span class="intro-choice__icon">◉</span><span class="intro-choice__body"><strong>尝试经营自媒体</strong><small>让世界认识你</small></span><span class="intro-choice__check" aria-hidden="true">→</span></button>
+            <button class="intro-choice" type="button" data-intro-choice="balance" role="listitem"><span class="intro-choice__icon">✦</span><span class="intro-choice__body"><strong>平衡发展</strong><small>把日子过得有弹性</small></span><span class="intro-choice__check" aria-hidden="true">→</span></button>
+          </div>
+        </div>
+
+        <footer class="intro-screen__footer"><p class="selection-note" id="intro-selection-note">已选择：专注篮球训练</p><button class="button button--primary button--large" id="intro-confirm-btn" type="button">让故事开始 <i aria-hidden="true">→</i></button></footer>
+      </section>
+
+      <!-- 核心人生界面 -->
+      <section class="screen game-screen is-hidden" id="game-screen" aria-label="人生游戏主界面">
+        <div class="game-screen__city" aria-hidden="true"><span></span><i></i><b></b><em></em></div>
+        <header class="game-header">
+          <div class="identity-block">
+            <div class="avatar" aria-hidden="true"><span>霍</span></div>
+            <div class="identity-block__text">
+              <p class="identity-block__meta"><span id="date-display">2026 年 7 月</span> · <span id="age-display">22 岁</span></p>
+              <h2 id="player-name">霍开然</h2>
+              <p id="career-display" class="career-display">正在探索方向</p>
+            </div>
+          </div>
+          <div class="game-header__location"><span class="pulse-dot"></span><span id="city-display">北方 · 北城</span><small>此刻正在发生</small></div>
+          <button class="icon-button icon-button--quiet" id="quick-save-btn" type="button" aria-label="立即保存"><span aria-hidden="true">⌁</span></button>
+        </header>
+
+        <div class="game-content" id="game-content">
+          <!-- 人生：把每月事件呈现为一个电影场景 -->
+          <section class="tab-panel life-panel is-active" id="life-panel" data-panel="life" aria-labelledby="life-tab">
+            <div class="section-heading section-heading--compact">
+              <div><p class="eyebrow">此刻的人生</p><h3>这一幕，轮到你了</h3></div>
+              <span class="mood-pill" id="mood-display"><i aria-hidden="true">☀</i> 稳步向前</span>
+            </div>
+
+            <div class="life-whispers" aria-label="人生状态短句"><span>健康：<b id="health-phrase">身体还撑得住</b></span><span>心情：<b id="mood-phrase">还算平静</b></span><span>家里：<b id="family-phrase">家里一直在等你</b></span><span>朋友：<b id="friendship-phrase">有人愿意听你说话</b></span><span>爱情：<b id="love-phrase">还在慢慢发生</b></span><span>野心：<b id="ambition-phrase">不甘心一直普通</b></span></div>
+
+            <div class="quick-stats" aria-label="关键人生数据">
+              <article class="quick-stat quick-stat--money"><span>存款</span><strong id="money-display">¥ 8,000</strong><small id="money-change">初始资金</small></article>
+              <article class="quick-stat"><span>月收入</span><strong id="income-display">¥ 0</strong><small id="expense-display">支出 ¥ 1,200</small></article>
+              <article class="quick-stat"><span>声望</span><strong id="reputation-display">10</strong><small><span id="fans-display">0</span> 人记得你</small></article>
+            </div>
+
+            <div class="scene-stage scene--north-city-night scene--slow-smoke scene--distant-traffic" id="scene-stage" data-scene="life" aria-label="当前人生场景">
+              <div class="scene-stage__sky" aria-hidden="true"></div>
+              <div class="scene-stage__rain" aria-hidden="true"></div>
+              <div class="scene-stage__street" aria-hidden="true"><span></span><i></i><b></b></div>
+              <div class="scene-pixel-friend" aria-hidden="true"><img src="assets/night-cat-pixel-v1-optimized.png" alt="" /><span>✦</span></div>
+              <article class="event-card" id="event-card" aria-live="polite">
+                <div class="event-card__topline"><span class="event-type" id="event-type">人生开场</span><span class="event-count"><i aria-hidden="true">✦</i> 第 <b id="month-count-display">1</b> 个月</span></div>
+                <div class="event-card__illustration" aria-hidden="true"><div class="event-orbit"></div><span id="event-icon">⟡</span></div>
+                <h3 id="event-title">站在人生的十字路口</h3>
+                <div class="current-narrative" id="current-narrative"><p id="event-description">2026 年的夏天，霍开然开始认真思考：篮球、远方、事业，哪一条路会通往更好的自己？</p></div>
+                <p class="event-hint" id="event-hint"><i aria-hidden="true">◎</i> 每个选择都会留下痕迹</p>
+              </article>
+            </div>
+
+            <div class="choice-wrap" id="choice-wrap"><p class="choice-label">你准备怎么做？</p><div class="choice-list" id="choice-list" role="list" aria-label="事件选择"></div></div>
+
+            <article class="result-card is-hidden" id="result-panel" aria-live="polite"><div class="result-card__header"><span class="result-card__spark" aria-hidden="true">✦</span><span>这一选择留下了回声</span></div><p id="result-description"></p><div class="effect-list" id="effect-list"></div></article>
+            <button class="button button--primary button--large button--next is-hidden" id="next-month-btn" type="button">快进两个月 <i aria-hidden="true">→</i></button>
+          </section>
+
+          <!-- 人物档案 -->
+          <section class="tab-panel is-hidden" id="profile-panel" data-panel="profile" aria-labelledby="profile-tab">
+            <div class="section-heading"><div><p class="eyebrow">PERSONAL FILE · 人生档案</p><h3>一个正在被书写的人</h3></div><span class="section-caption">NORTH / 2004</span></div>
+            <article class="life-file">
+              <aside class="life-file__portrait"><div class="life-file__portrait-head"><span>档案照片</span><b>NO. 0701</b></div><div class="life-file__silhouette" aria-hidden="true"><span>霍</span></div><p class="life-file__quote">“把路走远一点，答案会自己出现。”</p></aside>
+              <div class="life-file__body">
+                <div class="life-file__name"><div><p id="profile-name">霍开然</p><span id="profile-signature">HUO KAIRAN</span></div><i>已记录</i></div>
+                <dl class="life-file__facts">
+                  <div><dt>出生日期</dt><dd id="profile-birth">2004 年 7 月 1 日</dd></div><div><dt>籍贯</dt><dd id="profile-origin">北方北城</dd></div><div><dt>身高 / 体重</dt><dd id="profile-build">185 cm / 70 kg</dd></div><div><dt>当前方向</dt><dd id="profile-school">正在书写自己的履历</dd></div><div><dt>专项</dt><dd id="profile-specialty">篮球 · 控球后卫</dd></div><div><dt>偶像</dt><dd id="profile-idol">迈克尔·乔丹</dd></div>
+                </dl>
+                <div class="life-file__notes"><span class="life-file__map" aria-hidden="true">NORTH CITY</span><p id="profile-description">积极、慢热、负责、有行动力。喜欢篮球、健身、旅行、英语和关于远方的一切。</p><div class="life-file__tickets" aria-hidden="true"><i>TRAIN 0701</i><i>NORTH → WORLD</i><b>🏀</b></div></div>
+              </div>
+            </article>
+          </section>
+
+          <!-- 属性 -->
+          <section class="tab-panel is-hidden" id="stats-panel" data-panel="stats" aria-labelledby="stats-tab">
+            <div class="section-heading"><div><p class="eyebrow">人物成长</p><h3>身体与内心，都在变化</h3></div><span class="section-caption">0 — 100</span></div>
+            <p class="panel-lead">数字不是你的人生，但每个数字都记得你走过的路。</p>
+            <div class="stat-grid" id="stats-grid">
+              <article class="stat-card" data-stat="health"><div class="stat-card__head"><span>健康</span><b id="stat-health">72</b></div><div class="meter"><i style="width:72%"></i></div><small id="stat-health-note">身体是人生的底气</small></article>
+              <article class="stat-card" data-stat="happiness"><div class="stat-card__head"><span>快乐</span><b id="stat-happiness">68</b></div><div class="meter meter--warm"><i style="width:68%"></i></div><small id="stat-happiness-note">保持对生活的热情</small></article>
+              <article class="stat-card" data-stat="fitness"><div class="stat-card__head"><span>体能</span><b id="stat-fitness">65</b></div><div class="meter meter--blue"><i style="width:65%"></i></div><small id="stat-fitness-note">训练带来回报</small></article>
+              <article class="stat-card" data-stat="basketball"><div class="stat-card__head"><span>篮球</span><b id="stat-basketball">62</b></div><div class="meter meter--orange"><i style="width:62%"></i></div><small id="stat-basketball-note">控球后卫的基本功</small></article>
+              <article class="stat-card" data-stat="english"><div class="stat-card__head"><span>英语</span><b id="stat-english">48</b></div><div class="meter meter--violet"><i style="width:48%"></i></div><small id="stat-english-note">远方需要一张语言通行证</small></article>
+              <article class="stat-card" data-stat="knowledge"><div class="stat-card__head"><span>知识</span><b id="stat-knowledge">55</b></div><div class="meter meter--blue"><i style="width:55%"></i></div><small id="stat-knowledge-note">持续学习，持续清醒</small></article>
+              <article class="stat-card" data-stat="social"><div class="stat-card__head"><span>社交</span><b id="stat-social">53</b></div><div class="meter meter--pink"><i style="width:53%"></i></div><small id="stat-social-note">关系是另一种财富</small></article>
+              <article class="stat-card" data-stat="discipline"><div class="stat-card__head"><span>自律</span><b id="stat-discipline">60</b></div><div class="meter meter--mint"><i style="width:60%"></i></div><small id="stat-discipline-note">你比昨天更接近目标</small></article>
+              <article class="stat-card" data-stat="courage"><div class="stat-card__head"><span>勇气</span><b id="stat-courage">52</b></div><div class="meter meter--warm"><i style="width:52%"></i></div><small id="stat-courage-note">迈出第一步很重要</small></article>
+              <article class="stat-card stat-card--danger" data-stat="pressure"><div class="stat-card__head"><span>压力</span><b id="stat-pressure">30</b></div><div class="meter meter--danger"><i style="width:30%"></i></div><small id="stat-pressure-note">留一点时间给自己</small></article>
+              <article class="stat-card" data-stat="reputation"><div class="stat-card__head"><span>声望</span><b id="stat-reputation">10</b></div><div class="meter meter--gold"><i style="width:10%"></i></div><small id="stat-reputation-note">让行动为你说话</small></article>
+              <article class="stat-card" data-stat="luck"><div class="stat-card__head"><span>幸运</span><b id="stat-luck">50</b></div><div class="meter meter--violet"><i style="width:50%"></i></div><small id="stat-luck-note">命运总有一点惊喜</small></article>
+            </div>
+          </section>
+
+          <!-- 成长商店：余额、价格、支付和升级结果均来自后端，不在浏览器本地结算。 -->
+          <section class="tab-panel is-hidden" id="growth-panel" data-panel="growth" aria-labelledby="growth-tab">
+            <div id="growth-content" aria-live="polite">
+              <div class="growth-loading">正在连接成长服务…</div>
+            </div>
+          </section>
+
+          <!-- 关系 -->
+          <section class="tab-panel is-hidden" id="relationships-panel" data-panel="relationships" aria-labelledby="relationships-tab">
+            <div class="section-heading"><div><p class="eyebrow">人生同行者</p><h3>关系不是一张表</h3></div><span class="section-caption" id="relationship-count">4 人</span></div>
+            <p class="panel-lead">有些人会陪你很久，有些人会在故事里留下一个重要章节。</p>
+            <div class="relationship-feature" id="relationship-feature"><span class="relationship-feature__orb" aria-hidden="true">♡</span><div><small>本月关系提示</small><p id="relationship-tip">多给家人打个电话吧。</p></div></div>
+            <div class="relationship-list" id="relationship-list"></div>
+          </section>
+
+          <!-- 资产 -->
+          <section class="tab-panel is-hidden" id="assets-panel" data-panel="assets" aria-labelledby="assets-tab">
+            <div class="section-heading"><div><p class="eyebrow">现实的筹码</p><h3>钱、履历与下一站</h3></div><span class="section-caption" id="net-worth-label">净资产</span></div>
+            <article class="net-worth-card"><span>当前净资产</span><strong id="net-worth-display">¥ 8,000</strong><div class="net-worth-card__footer"><span id="debt-display">债务 ¥ 0</span><span id="investment-display">投资 ¥ 0</span></div></article>
+            <div class="asset-grid" id="asset-grid"><article class="asset-item"><span class="asset-item__icon">◌</span><div><small>月收入</small><b id="asset-income">¥ 0</b></div></article><article class="asset-item"><span class="asset-item__icon">⌂</span><div><small>房产</small><b id="property-display">暂无</b></div></article><article class="asset-item"><span class="asset-item__icon">▱</span><div><small>车辆</small><b id="vehicle-display">暂无</b></div></article><article class="asset-item"><span class="asset-item__icon">◎</span><div><small>粉丝</small><b id="asset-fans">0</b></div></article><article class="asset-item"><span class="asset-item__icon">⌁</span><div><small>去过国家</small><b id="travel-display">0 个</b></div></article><article class="asset-item"><span class="asset-item__icon">✦</span><div><small>工作经验</small><b id="experience-display">0 月</b></div></article><article class="asset-item"><span class="asset-item__icon">◇</span><div><small>英语等级</small><b id="english-level-display">基础</b></div></article><article class="asset-item"><span class="asset-item__icon">▤</span><div><small>学历</small><b id="education-display">本科在读</b></div></article></div>
+            <div class="tag-section"><p class="choice-label">性格标签</p><div class="tag-list" id="personality-tags"><span class="tag">积极向上</span><span class="tag">可靠</span><span class="tag">勤奋</span></div></div>
+          </section>
+
+          <!-- 成就 -->
+          <section class="tab-panel is-hidden" id="achievements-panel" data-panel="achievements" aria-labelledby="achievements-tab">
+            <div class="section-heading"><div><p class="eyebrow">走过的证明</p><h3>人生印记</h3></div><span class="section-caption"><b id="achievement-unlocked-count">0</b> / <span id="achievement-total-count">30</span></span></div>
+            <div class="achievement-progress"><div><span>完成进度</span><strong id="achievement-progress-text">0%</strong></div><div class="meter meter--gold"><i id="achievement-progress-bar" style="width:0%"></i></div></div>
+            <div class="achievement-list" id="achievement-list"></div>
+          </section>
+
+          <!-- 回忆相册 / 时间线 -->
+          <section class="tab-panel is-hidden" id="timeline-panel" data-panel="timeline" aria-labelledby="timeline-tab">
+            <div class="section-heading"><div><p class="eyebrow">不可复制的旅程</p><h3>回忆相册</h3></div><button class="text-button text-button--small" id="timeline-filter-btn" type="button">最近</button></div>
+            <div class="timeline-summary" id="timeline-summary"><span>从 2026 年 7 月出发</span><b id="timeline-entry-count">1 条记录</b></div>
+            <ol class="timeline-list" id="timeline-list"></ol>
+          </section>
+
+          <!-- 设置 -->
+          <section class="tab-panel is-hidden" id="settings-panel" data-panel="settings" aria-labelledby="settings-tab">
+            <div class="section-heading"><div><p class="eyebrow">掌握你的存档</p><h3>设置</h3></div></div>
+            <div class="setting-group"><p class="setting-group__title">存档管理</p><button class="setting-row" id="new-save-btn" type="button"><span class="setting-row__icon">＋</span><span><b>开启新的人生</b><small>创建新的存档，不覆盖当前进度</small></span><i aria-hidden="true">›</i></button><button class="setting-row" id="export-save-btn" type="button"><span class="setting-row__icon">↓</span><span><b>导出存档</b><small>保存为 JSON 文件到本地</small></span><i aria-hidden="true">›</i></button><label class="setting-row" for="import-save-input"><span class="setting-row__icon">↑</span><span><b>导入存档</b><small>从 JSON 文件恢复人生进度</small></span><i aria-hidden="true">›</i></label><input class="visually-hidden" id="import-save-input" type="file" accept="application/json,.json" /></div>
+            <div class="setting-group"><p class="setting-group__title">游戏体验</p><label class="setting-row setting-row--toggle"><span class="setting-row__icon">⌁</span><span><b>自动保存</b><small>每次选择后保存游戏进度</small></span><input id="auto-save-toggle" type="checkbox" checked /><i class="switch" aria-hidden="true"></i></label><button class="setting-row" id="about-game-btn" type="button"><span class="setting-row__icon">i</span><span><b>关于这段人生</b><small>版本 1.1 · 本地剧情 / 成长服务</small></span><i aria-hidden="true">›</i></button></div>
+            <div class="danger-zone"><button class="button button--danger" id="delete-save-btn" type="button">删除当前存档</button><p>此操作无法撤销，请确认已导出重要存档。</p></div>
+          </section>
+        </div>
+
+        <nav class="bottom-nav" aria-label="游戏导航">
+          <button class="nav-item is-active" id="life-tab" type="button" data-tab="life"><span class="nav-item__icon">⌂</span><span>人生</span></button>
+          <button class="nav-item" id="profile-tab" type="button" data-tab="profile"><span class="nav-item__icon">▤</span><span>档案</span></button>
+          <button class="nav-item" id="stats-tab" type="button" data-tab="stats"><span class="nav-item__icon">◒</span><span>属性</span></button>
+          <button class="nav-item" id="growth-tab" type="button" data-tab="growth"><span class="nav-item__icon">✦</span><span>成长</span></button>
+          <button class="nav-item" id="relationships-tab" type="button" data-tab="relationships"><span class="nav-item__icon">♡</span><span>关系</span></button>
+          <button class="nav-item" id="assets-tab" type="button" data-tab="assets"><span class="nav-item__icon">◇</span><span>资产</span></button>
+          <button class="nav-item" id="achievements-tab" type="button" data-tab="achievements"><span class="nav-item__icon">✦</span><span>成就</span></button>
+          <button class="nav-item" id="timeline-tab" type="button" data-tab="timeline"><span class="nav-item__icon">◎</span><span>回忆</span></button>
+          <button class="nav-item" id="settings-tab" type="button" data-tab="settings"><span class="nav-item__icon">⚙</span><span>设置</span></button>
+        </nav>
+      </section>
+    </main>
+
+    <!-- 通用弹窗 -->
+    <div class="modal is-hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal__backdrop" data-modal-close></div><section class="modal__dialog"><button class="modal__close icon-button" id="modal-close-btn" type="button" aria-label="关闭弹窗" data-modal-close>×</button><div class="modal__badge" id="modal-badge" aria-hidden="true">✦</div><p class="eyebrow" id="modal-kicker">人生提醒</p><h2 id="modal-title">新的篇章</h2><div id="modal-content" class="modal__content"></div><div class="modal__actions" id="modal-actions"><button class="button button--primary" id="modal-confirm-btn" type="button">我知道了</button></div></section></div>
+
+    <!-- 全局反馈提示，保留 #toast 供现有 UI 逻辑使用。 -->
+    <div class="feedback-toast" id="feedback-toast" aria-live="polite"><div class="toast is-hidden" id="toast" role="status"><span class="toast__icon" id="toast-icon">✓</span><p id="toast-message">已自动保存</p></div></div>
+    <div class="growth-success-burst" id="growth-success-burst" aria-hidden="true"><i></i><b></b><span>✦</span><em>¥</em></div>
+
+    <!-- 剧情可本地运行；成长、余额和支付仅通过后端 API 获取权威结果。 -->
+    <script defer src="js/player.js"></script>
+    <script defer src="js/events.js"></script>
+    <script defer src="js/careers.js"></script>
+    <script defer src="js/relationships.js"></script>
+    <script defer src="js/achievements.js"></script>
+    <script defer src="js/save.js"></script>
+    <script defer src="js/scenes.js"></script>
+    <script defer src="js/character.js"></script>
+    <script defer src="js/ui.js"></script>
+    <script defer src="js/game.js"></script>
+    <script defer src="js/growth.js"></script>
+  </body>
+</html>
