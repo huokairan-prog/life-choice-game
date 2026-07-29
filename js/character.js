@@ -66,7 +66,7 @@
   };
 
   const DEFAULT_CONFIG = {
-    identity: { name: '霍开然', gender: 'male', age: 22, hometown: '北方北城', educationPlan: 'defer', school: '', major: '', specialty: '篮球 · 控球后卫', idol: '迈克尔·乔丹' },
+    identity: { name: '霍开然', gender: 'male', age: 22, hometown: '北方北城', educationPlan: 'defer', school: '', major: '', specialty: '篮球 · 控球后卫', idol: '勒布朗·詹姆斯' },
     body: {
       height: 185, weight: 70, muscle: 55, bodyFat: 14,
       physical: { strength: 35, speed: 35, endurance: 34, agility: 35, jump: 38, coordination: 32, reaction: 32, recovery: 28, resilience: 30 }

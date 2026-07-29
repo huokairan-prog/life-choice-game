@@ -353,7 +353,7 @@
           : '正在书写自己的履历';
     setText('#profile-school', directionLabel);
     setText('#profile-specialty', identity.specialty || player.specialty || '篮球 · 控球后卫');
-    setText('#profile-idol', identity.idol || player.idol || '迈克尔·乔丹');
+    setText('#profile-idol', identity.idol || player.idol || '勒布朗·詹姆斯');
     const traitList = Object.keys(character.personality || player.personality || {}).slice(0, 3).join('、');
     const interestsText = Array.isArray(interests) ? interests.slice(0, 4).join('、') : String(interests || '篮球、健身、旅行、英语');
     const talentLine = talents && talents.sport ? '运动的直觉让他在球场上更有底气。' : '';
