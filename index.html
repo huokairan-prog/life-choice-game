@@ -180,13 +180,19 @@
               <article class="quick-stat"><span>声望</span><strong id="reputation-display">10</strong><small><span id="fans-display">0</span> 人记得你</small></article>
             </div>
 
+            <aside class="story-mission is-hidden" id="story-mission" aria-live="polite">
+              <div class="story-mission__copy"><span id="story-mission-kicker">当前主线</span><strong id="story-mission-title">北城机会</strong><small id="story-mission-note">你的选择会在之后再次出现</small></div>
+              <div class="story-mission__progress" aria-hidden="true"><i id="story-mission-progress"></i></div>
+              <b id="story-mission-count">0 / 3</b>
+            </aside>
+
             <div class="scene-stage scene--north-city-night scene--slow-smoke scene--distant-traffic" id="scene-stage" data-scene="life" aria-label="当前人生场景">
               <div class="scene-stage__sky" aria-hidden="true"></div>
               <div class="scene-stage__rain" aria-hidden="true"></div>
               <div class="scene-stage__street" aria-hidden="true"><span></span><i></i><b></b></div>
               <div class="scene-pixel-friend" aria-hidden="true"><img src="assets/night-cat-pixel-v1-optimized.png" alt="" /><span>✦</span></div>
               <article class="event-card" id="event-card" aria-live="polite">
-                <div class="event-card__topline"><span class="event-type" id="event-type">人生开场</span><span class="event-count"><i aria-hidden="true">✦</i> 第 <b id="month-count-display">1</b> 个月</span></div>
+                <div class="event-card__topline"><span class="event-type" id="event-type">人生开场</span><span class="event-count" id="event-count"><i aria-hidden="true">✦</i> 第 <b id="month-count-display">1</b> 个月</span></div>
                 <div class="event-card__illustration" aria-hidden="true"><div class="event-orbit"></div><span id="event-icon">⟡</span></div>
                 <h3 id="event-title">站在人生的十字路口</h3>
                 <div class="current-narrative" id="current-narrative"><p id="event-description">2026 年的夏天，霍开然开始认真思考：篮球、远方、事业，哪一条路会通往更好的自己？</p></div>
@@ -276,7 +282,7 @@
           <section class="tab-panel is-hidden" id="settings-panel" data-panel="settings" aria-labelledby="settings-tab">
             <div class="section-heading"><div><p class="eyebrow">掌握你的存档</p><h3>设置</h3></div></div>
             <div class="setting-group"><p class="setting-group__title">存档管理</p><button class="setting-row" id="new-save-btn" type="button"><span class="setting-row__icon">＋</span><span><b>开启新的人生</b><small>创建新的存档，不覆盖当前进度</small></span><i aria-hidden="true">›</i></button><button class="setting-row" id="export-save-btn" type="button"><span class="setting-row__icon">↓</span><span><b>导出存档</b><small>保存为 JSON 文件到本地</small></span><i aria-hidden="true">›</i></button><label class="setting-row" for="import-save-input"><span class="setting-row__icon">↑</span><span><b>导入存档</b><small>从 JSON 文件恢复人生进度</small></span><i aria-hidden="true">›</i></label><input class="visually-hidden" id="import-save-input" type="file" accept="application/json,.json" /></div>
-            <div class="setting-group"><p class="setting-group__title">游戏体验</p><label class="setting-row setting-row--toggle"><span class="setting-row__icon">⌁</span><span><b>自动保存</b><small>每次选择后保存游戏进度</small></span><input id="auto-save-toggle" type="checkbox" checked /><i class="switch" aria-hidden="true"></i></label><button class="setting-row" id="about-game-btn" type="button"><span class="setting-row__icon">i</span><span><b>关于这段人生</b><small>版本 1.1 · 本地剧情 / 成长服务</small></span><i aria-hidden="true">›</i></button></div>
+            <div class="setting-group"><p class="setting-group__title">游戏体验</p><label class="setting-row setting-row--toggle"><span class="setting-row__icon">⌁</span><span><b>自动保存</b><small>每次选择后保存游戏进度</small></span><input id="auto-save-toggle" type="checkbox" checked /><i class="switch" aria-hidden="true"></i></label><button class="setting-row" id="about-game-btn" type="button"><span class="setting-row__icon">i</span><span><b>关于这段人生</b><small>版本 1.2 · 北城机会</small></span><i aria-hidden="true">›</i></button></div>
             <div class="danger-zone"><button class="button button--danger" id="delete-save-btn" type="button">删除当前存档</button><p>此操作无法撤销，请确认已导出重要存档。</p></div>
           </section>
         </div>
