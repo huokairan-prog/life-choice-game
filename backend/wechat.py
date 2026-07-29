@@ -7,6 +7,7 @@ import json
 import secrets
 import time
 from typing import Any
+from urllib.parse import quote, urlencode
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -45,6 +46,14 @@ class WeChatPayClient:
         )
         return CRYPTOGRAPHY_AVAILABLE and all(required)
 
+    @property
+    def oauth_configured(self) -> bool:
+        return bool(
+            self.settings.wechat_appid
+            and self.settings.wechat_oauth_app_secret
+            and self.settings.wechat_oauth_redirect_uri
+        )
+
     @staticmethod
     def _require_cryptography() -> None:
         if not CRYPTOGRAPHY_AVAILABLE:
@@ -76,13 +85,13 @@ class WeChatPayClient:
             f'signature="{encoded_signature}"'
         )
 
-    def _request_json(self, method: str, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def _request_json(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         if not self.configured:
             raise ApiError("WECHAT_NOT_CONFIGURED", "正式环境尚未完成微信支付配置。", 503)
-        body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+        body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False) if payload is not None else ""
         request = Request(
             f"https://api.mch.weixin.qq.com{path}",
-            data=body.encode("utf-8"),
+            data=body.encode("utf-8") if method.upper() != "GET" else None,
             method=method,
             headers={"Authorization": self._authorization(method, path, body), "Accept": "application/json", "Content-Type": "application/json"},
         )
@@ -94,6 +103,37 @@ class WeChatPayClient:
             raise ApiError("WECHAT_CREATE_FAILED", "微信支付订单创建失败。", 502, {"provider": detail}) from error
         except URLError as error:
             raise ApiError("WECHAT_UNAVAILABLE", "无法连接微信支付服务。", 502) from error
+
+    def oauth_authorize_url(self, state: str) -> str:
+        if not self.oauth_configured:
+            raise ApiError("WECHAT_OAUTH_NOT_CONFIGURED", "微信网页登录配置尚未完成。", 503)
+        query = urlencode({
+            "appid": self.settings.wechat_appid,
+            "redirect_uri": self.settings.wechat_oauth_redirect_uri,
+            "response_type": "code",
+            "scope": "snsapi_base",
+            "state": state,
+        })
+        return f"https://open.weixin.qq.com/connect/oauth2/authorize?{query}#wechat_redirect"
+
+    def exchange_oauth_code(self, code: str) -> dict[str, Any]:
+        if not self.oauth_configured:
+            raise ApiError("WECHAT_OAUTH_NOT_CONFIGURED", "微信网页登录配置尚未完成。", 503)
+        query = urlencode({
+            "appid": self.settings.wechat_appid,
+            "secret": self.settings.wechat_oauth_app_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+        })
+        try:
+            with urlopen(f"https://api.weixin.qq.com/sns/oauth2/access_token?{query}", timeout=12) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (HTTPError, URLError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ApiError("WECHAT_OAUTH_FAILED", "微信登录授权失败，请稍后重试。", 502) from error
+        openid = str(payload.get("openid", ""))
+        if not openid:
+            raise ApiError("WECHAT_OAUTH_FAILED", "微信登录未返回有效的 OpenID。", 502)
+        return payload
 
     def create_jsapi_order(self, order: dict[str, Any], openid: str) -> dict[str, Any]:
         if not openid:
@@ -127,6 +167,17 @@ class WeChatPayClient:
         message = f"{self.settings.wechat_appid}\n{timestamp}\n{nonce}\n{package}\n".encode("utf-8")
         pay_sign = base64.b64encode(self._private_key().sign(message, padding.PKCS1v15(), hashes.SHA256())).decode("ascii")
         return {"appId": self.settings.wechat_appid, "timeStamp": timestamp, "nonceStr": nonce, "package": package, "signType": "RSA", "paySign": pay_sign}
+
+    def query_jsapi_order(self, out_trade_no: str) -> dict[str, Any]:
+        if not out_trade_no:
+            raise ApiError("ORDER_NOT_FOUND", "订单号不能为空。", 404)
+        path = f"/v3/pay/transactions/out-trade-no/{quote(out_trade_no, safe='')}?{urlencode({'mchid': self.settings.wechat_mchid})}"
+        payload = self._request_json("GET", path)
+        if str(payload.get("out_trade_no", "")) != out_trade_no:
+            raise ApiError("WECHAT_ORDER_MISMATCH", "微信支付返回的订单号不匹配。", 502)
+        if str(payload.get("mchid", "")) != self.settings.wechat_mchid:
+            raise ApiError("WECHAT_MERCHANT_MISMATCH", "微信支付返回的商户号不匹配。", 502)
+        return payload
 
     def verify_notification(self, headers: dict[str, str], raw_body: bytes) -> dict[str, Any]:
         self._require_cryptography()

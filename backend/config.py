@@ -140,6 +140,10 @@ class Settings:
     wechat_private_key_serial: str
     wechat_platform_cert_path: str
     wechat_notify_url: str
+    wechat_oauth_app_secret: str
+    wechat_oauth_redirect_uri: str
+    public_site_url: str
+    cors_origins: tuple[str, ...]
 
     @property
     def is_production(self) -> bool:
@@ -175,4 +179,8 @@ class Settings:
             wechat_private_key_serial=os.getenv("WECHAT_PAY_PRIVATE_KEY_SERIAL", ""),
             wechat_platform_cert_path=os.getenv("WECHAT_PAY_PLATFORM_CERT_PATH", ""),
             wechat_notify_url=os.getenv("WECHAT_PAY_NOTIFY_URL", ""),
+            wechat_oauth_app_secret=os.getenv("WECHAT_OAUTH_APP_SECRET", ""),
+            wechat_oauth_redirect_uri=os.getenv("WECHAT_OAUTH_REDIRECT_URI", ""),
+            public_site_url=os.getenv("LIFE_PUBLIC_SITE_URL", "").rstrip("/"),
+            cors_origins=tuple(origin.strip().rstrip("/") for origin in os.getenv("LIFE_CORS_ORIGINS", "").split(",") if origin.strip()),
         )

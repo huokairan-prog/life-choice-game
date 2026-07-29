@@ -4,6 +4,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import hashlib
 import json
 import mimetypes
 import re
@@ -11,7 +12,7 @@ import socket
 import sqlite3
 import sys
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 try:
     from .config import Settings
@@ -78,6 +79,55 @@ class Application:
             profile = bootstrap_profile(connection, user_id, is_minor)
         return {"token": token, "profile": profile, "environment": self.settings.app_env}
 
+    def _allowed_public_origins(self) -> set[str]:
+        origins = set(self.settings.cors_origins)
+        if self.settings.public_site_url:
+            parsed = urlparse(self.settings.public_site_url)
+            origins.add(f"{parsed.scheme}://{parsed.netloc}".rstrip("/"))
+        return origins
+
+    def validate_return_url(self, value: str) -> str:
+        parsed = urlparse(value)
+        origin = f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+        if parsed.scheme != "https" or not parsed.netloc or origin not in self._allowed_public_origins():
+            raise ApiError("INVALID_RETURN_URL", "微信登录返回地址未被允许。", 400)
+        return value.split("#", 1)[0]
+
+    def wechat_login_url(self, return_url: str) -> str:
+        state = issue_token(
+            {"sub": "wechat-oauth-state", "purpose": "wechat-oauth", "return_to": self.validate_return_url(return_url)},
+            self.settings.auth_jwt_secret,
+            10 * 60,
+        )
+        return self.wechat.oauth_authorize_url(state)
+
+    def finish_wechat_login(self, code: str, state: str) -> str:
+        claims = verify_token(state, self.settings.auth_jwt_secret)
+        if claims.get("purpose") != "wechat-oauth":
+            raise AuthError("微信登录状态无效")
+        return_url = self.validate_return_url(str(claims.get("return_to", "")))
+        payload = self.wechat.exchange_oauth_code(code)
+        openid = str(payload.get("openid", ""))
+        if not openid:
+            raise AuthError("微信登录未返回用户标识")
+        user_id = f"wechat_{hashlib.sha256(openid.encode('utf-8')).hexdigest()[:48]}"
+        token = issue_token({"sub": user_id, "wechat_openid": openid, "provider": "wechat"}, self.settings.auth_jwt_secret, 30 * 86400)
+        return f"{return_url}#life_token={quote(token, safe='')}"
+
+    def synchronize_payment_order(self, connection: sqlite3.Connection, user_id: str, order_id: str) -> dict[str, Any]:
+        order = order_for_user(connection, user_id, order_id)
+        if not self.settings.is_production or order.get("status") != "PENDING":
+            return order
+        provider = self.wechat.query_jsapi_order(str(order["out_trade_no"]))
+        if str(provider.get("trade_state", "")) == "SUCCESS":
+            amount = int((provider.get("amount") or {}).get("total", 0))
+            transaction_id = str(provider.get("transaction_id", ""))
+            if amount <= 0 or not transaction_id:
+                raise ApiError("WECHAT_PAYLOAD_INVALID", "微信支付查单结果缺少交易信息。", 502)
+            settle_payment(connection, order_id, transaction_id, amount, provider)
+            return order_for_user(connection, user_id, order_id)
+        return order
+
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "LIFELifecycle/1.0"
@@ -100,12 +150,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
     def _cors_headers(self) -> None:
-        # Production is same-origin only. Development may be reached by the local static preview.
         origin = self.headers.get("Origin", "")
-        if not self.app.settings.is_production and (origin == "null" or origin.startswith("http://127.0.0.1") or origin.startswith("http://localhost")):
+        development_origin = origin == "null" or origin.startswith("http://127.0.0.1") or origin.startswith("http://localhost")
+        allowed_origin = origin in self.app._allowed_public_origins()
+        if (not self.app.settings.is_production and development_origin) or allowed_origin:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key")
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Vary", "Origin")
+
+    def send_redirect(self, location: str) -> None:
+        self.send_response(HTTPStatus.FOUND)
+        self._security_headers()
+        self.send_header("Location", location)
+        self.end_headers()
 
     def send_json(self, status: int, payload: dict[str, Any]) -> None:
         data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -163,6 +221,10 @@ class Handler(BaseHTTPRequestHandler):
             parsed = urlparse(self.path)
             if parsed.path.startswith("/api/"):
                 self._get_api(parsed.path, parse_qs(parsed.query))
+            elif parsed.path == "/auth/wechat/login":
+                self._wechat_login(parse_qs(parsed.query))
+            elif parsed.path == "/auth/wechat/callback":
+                self._wechat_callback(parse_qs(parsed.query))
             else:
                 self._serve_static(parsed.path)
         except Exception as error:
@@ -195,7 +257,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, ledger(connection, account["user_id"], record_type))
             elif path.startswith("/api/payments/orders/"):
                 order_id = path.rsplit("/", 1)[1]
-                self.send_json(200, {"order": order_for_user(connection, account["user_id"], order_id)})
+                self.send_json(200, {"order": self.app.synchronize_payment_order(connection, account["user_id"], order_id)})
             else:
                 raise ApiError("NOT_FOUND", "接口不存在。", 404)
 
@@ -279,6 +341,17 @@ class Handler(BaseHTTPRequestHandler):
             settle_payment(connection, order["id"], transaction_id, amount, payment)
         self.send_json(200, {"code": "SUCCESS", "message": "成功"})
 
+    def _wechat_login(self, query: dict[str, list[str]]) -> None:
+        return_url = str((query.get("return_url") or [""])[0])
+        self.send_redirect(self.app.wechat_login_url(return_url))
+
+    def _wechat_callback(self, query: dict[str, list[str]]) -> None:
+        code = str((query.get("code") or [""])[0])
+        state = str((query.get("state") or [""])[0])
+        if not code or not state:
+            raise ApiError("WECHAT_OAUTH_INVALID", "微信登录回调缺少必要参数。", 400)
+        self.send_redirect(self.app.finish_wechat_login(code, state))
+
     def _serve_static(self, path: str) -> None:
         requested = unquote(path.lstrip("/")) or "index.html"
         if requested.startswith(("backend/", ".env", "data/")):
@@ -310,6 +383,8 @@ def main() -> None:
     app = Application(settings)
     if settings.is_production and not app.wechat.configured:
         raise RuntimeError("生产环境必须完成微信支付 V3 配置，且不允许使用模拟充值。")
+    if settings.is_production and not app.wechat.oauth_configured:
+        raise RuntimeError("生产环境必须完成微信网页授权配置，才能为 JSAPI 支付获取 OpenID。")
     server = ThreadingHTTPServer((settings.host, settings.port), Handler)
     server.application = app  # type: ignore[attr-defined]
     if settings.host == "0.0.0.0":
