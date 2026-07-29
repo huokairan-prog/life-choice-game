@@ -2,7 +2,9 @@
 (function () {
   'use strict';
 
-  const API_BASE = window.LIFE_GROWTH_API_BASE || (location.protocol.startsWith('http') ? '' : 'http://127.0.0.1:8787');
+  const configuredApiBase = String(window.LIFE_GROWTH_API_BASE || '').trim().replace(/\/+$/, '');
+  const API_BASE = configuredApiBase || (location.protocol.startsWith('http') ? '' : 'http://127.0.0.1:8787');
+  const STATIC_PAGES_MODE = location.hostname.endsWith('.github.io') && !configuredApiBase;
   const TOKEN_KEY = 'hkr-growth-session-token-v1';
   const DEV_USER_KEY = 'hkr-growth-dev-user-v1';
   const ATTRIBUTES = [
@@ -18,7 +20,7 @@
     { id: 'venture', name: '创业筹备', initial_cash: 100000, coins_cost: 900, description: '为更大的选择预留一笔启动资金。', kind: 'paid' }
   ];
   const state = {
-    token: '', profile: null, products: [], rechargeRecords: [], spendingRecords: [], error: '', loading: false, appliedSignature: '', player: null,
+    token: '', profile: null, products: [], rechargeRecords: [], spendingRecords: [], error: '', loading: false, requiresWechatLogin: false, appliedSignature: '', player: null,
     initialCash: { options: [], selection: null, confirmedPayload: null, loading: false, loaded: false, canSelect: false, error: '' }
   };
   const $ = (selector) => document.querySelector(selector);
@@ -41,6 +43,32 @@
     try { if (value) sessionStorage.setItem(TOKEN_KEY, value); else sessionStorage.removeItem(TOKEN_KEY); } catch (_) { /* 私密浏览模式可继续使用内存 token */ }
   }
 
+  function isWechatBrowser() {
+    return /MicroMessenger/i.test(navigator.userAgent || '');
+  }
+
+  function restoreWechatLoginToken() {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const redirectedToken = params.get('life_token');
+    if (!redirectedToken) return;
+    storeToken(redirectedToken);
+    const cleanUrl = `${location.pathname}${location.search}`;
+    history.replaceState(null, document.title, cleanUrl);
+  }
+
+  function startWechatLogin() {
+    if (!configuredApiBase) {
+      ui()?.toast?.('公网成长服务尚未配置，暂时不能发起微信登录。', 'warning');
+      return;
+    }
+    if (!isWechatBrowser()) {
+      ui()?.toast?.('请在微信内打开游戏后再登录和充值。', 'warning');
+      return;
+    }
+    const returnUrl = `${location.origin}${location.pathname}${location.search}`;
+    location.assign(`${configuredApiBase}/auth/wechat/login?return_url=${encodeURIComponent(returnUrl)}`);
+  }
+
   async function request(path, options) {
     const config = options || {};
     const headers = { ...(config.headers || {}) };
@@ -60,7 +88,7 @@
   async function ensureSession() {
     if (token()) return;
     const health = await request('/api/health');
-    if (health.environment === 'production') throw Object.assign(new Error('正式环境需要通过账号系统登录后才能使用成长服务。'), { code: 'AUTH_REQUIRED' });
+    if (health.environment === 'production') throw Object.assign(new Error('请通过微信登录后再使用成长服务。'), { code: 'WECHAT_LOGIN_REQUIRED' });
     let userId = '';
     try { userId = localStorage.getItem(DEV_USER_KEY) || ''; } catch (_) { /* 仅开发模式的便利标识 */ }
     if (!userId) {
@@ -271,8 +299,16 @@
   }
 
   async function refresh() {
+    if (STATIC_PAGES_MODE) {
+      state.loading = false;
+      state.requiresWechatLogin = false;
+      state.error = '公开体验版仅提供剧情与本地存档。真实充值、余额与成长服务需要连接已部署的安全后端。';
+      render();
+      return;
+    }
     state.loading = true;
     state.error = '';
+    state.requiresWechatLogin = false;
     render();
     try {
       await ensureSession();
@@ -285,6 +321,7 @@
       state.spendingRecords = spendingResponse.records || [];
     } catch (error) {
       state.error = error.message || '成长服务未连接。';
+      state.requiresWechatLogin = error?.code === 'WECHAT_LOGIN_REQUIRED' || error?.code === 'UNAUTHORIZED';
     } finally {
       state.loading = false;
       render();
@@ -301,7 +338,13 @@
       return;
     }
     if (!state.profile) {
-      root.querySelector('#growth-content').innerHTML = `<section class="growth-offline"><span>◎</span><div><b>成长服务暂未连接</b><p>${escapeHtml(state.error || '请通过本地服务打开游戏后再使用充值与成长功能。')}</p><button class="button button--primary" type="button" data-growth-refresh>重新连接</button></div></section>`;
+      const title = STATIC_PAGES_MODE ? '公开体验版暂不支持真实充值' : state.requiresWechatLogin ? '请先通过微信登录' : '成长服务暂未连接';
+      const actions = STATIC_PAGES_MODE
+        ? ''
+        : state.requiresWechatLogin
+          ? '<button class="button button--primary" type="button" data-growth-wechat-login>微信登录</button>'
+          : '<button class="button button--primary" type="button" data-growth-refresh>重新连接</button>';
+      root.querySelector('#growth-content').innerHTML = `<section class="growth-offline"><span>◎</span><div><b>${title}</b><p>${escapeHtml(state.error || '请连接成长服务后再使用充值与成长功能。')}</p>${actions}</div></section>`;
       bindPanel();
       return;
     }
@@ -362,6 +405,7 @@
 
   function bindPanel() {
     document.querySelectorAll('[data-growth-refresh]').forEach((button) => button.addEventListener('click', refresh));
+    document.querySelectorAll('[data-growth-wechat-login]').forEach((button) => button.addEventListener('click', startWechatLogin));
     document.querySelectorAll('[data-growth-recharge]').forEach((button) => button.addEventListener('click', openRecharge));
     document.querySelectorAll('[data-growth-preview]').forEach((button) => button.addEventListener('click', () => previewAction({ attribute: button.dataset.growthPreview, quantity: Number(button.dataset.growthQuantity) })));
     document.querySelectorAll('[data-growth-body-input]').forEach((input) => input.addEventListener('input', () => {
@@ -424,6 +468,36 @@
     $('[data-growth-create-order]')?.addEventListener('click', () => createRechargeOrder(product));
   }
 
+  function showPaymentPending(order, note) {
+    const amount = order?.amount || yuan(order?.amount_cents || 0);
+    ui().showModal({
+      badge: '✓',
+      kicker: '支付确认',
+      title: '正在确认订单结果',
+      content: `<p>订单金额：<b>${escapeHtml(amount)}</b></p><p>${escapeHtml(note || '支付完成后，请查询订单确认成长币到账。')}</p><p class="growth-modal-note">成长币只会在服务器确认微信支付成功后发放，不以页面提示作为到账依据。</p>`,
+      actions: `<button class="button button--ghost" type="button" data-modal-close>稍后查看</button><button class="button button--primary" type="button" data-growth-check-order="${escapeHtml(order?.id || '')}">查询到账状态</button>`,
+    });
+    $('[data-growth-check-order]')?.addEventListener('click', () => checkPaymentStatus(order?.id));
+  }
+
+  async function checkPaymentStatus(orderId) {
+    if (!orderId) return;
+    try {
+      const response = await request(`/api/payments/orders/${encodeURIComponent(orderId)}`);
+      const order = response.order || {};
+      if (order.status === 'PAID') {
+        ui().closeModal();
+        await refresh();
+        celebrate();
+        ui().toast(`支付已确认，${coin(order.total_coins)} 已到账。`, 'success');
+        return;
+      }
+      showPaymentPending(order, '订单暂未确认到账；请稍等片刻后再次查询。');
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
   async function createRechargeOrder(product) {
     try {
       const response = await request('/api/payments/orders', { method: 'POST', headers: { 'Idempotency-Key': id() }, body: { sku: product.sku } });
@@ -431,9 +505,13 @@
         ui().showModal({ badge: '⚑', kicker: '开发测试模式', title: '测试订单已创建', content: `<p>这是开发环境模拟充值，不会产生真实收费。订单金额为 <b>${response.order.amount}</b>。</p><p>正式环境不会显示这个按钮，成长币只能由微信支付服务器通知发放。</p>`, actions: `<button class="button button--ghost" type="button" data-modal-close>暂时取消</button><button class="button button--primary" type="button" data-growth-simulate-pay="${escapeHtml(response.order.id)}">模拟支付成功（仅开发）</button>` });
         $('[data-growth-simulate-pay]')?.addEventListener('click', () => completeDevPayment(response.order.id));
       } else if (response.payment && window.WeixinJSBridge) {
-        window.WeixinJSBridge.invoke('getBrandWCPayRequest', response.payment, () => ui().toast('支付结果将以微信服务器通知为准。', 'success'));
+        window.WeixinJSBridge.invoke('getBrandWCPayRequest', response.payment, (result) => {
+          const completed = result?.err_msg === 'get_brand_wcpay_request:ok';
+          showPaymentPending(response.order, completed ? '微信已返回支付完成，请查询订单确认到账。' : '支付尚未完成或已取消；如已完成支付，请查询订单确认到账。');
+          if (completed) setTimeout(() => checkPaymentStatus(response.order.id), 1200);
+        });
       } else {
-        ui().showModal({ badge: '¥', kicker: '等待支付', title: '支付订单已创建', content: '<p>请在微信完成支付。成长币只会在微信支付服务器确认后到账。</p>', actions: '<button class="button button--primary" type="button" data-modal-close>我知道了</button>' });
+        showPaymentPending(response.order, '请在微信内完成支付。成长币只会在服务器确认微信支付成功后到账。');
       }
     } catch (error) {
       handleError(error);
@@ -507,7 +585,7 @@
     ui().toast(error?.message || '操作未完成，请稍后再试。', 'warning');
   }
 
-  function init() { render(); refresh(); }
+  function init() { restoreWechatLoginToken(); render(); refresh(); }
 
   window.LIFE_GROWTH = {
     refresh, render, applyProfile, seedFromPlayer, openRecharge, mountInitialCashOptions,
